@@ -1,7 +1,7 @@
 package main
 
 import (
-	"encoding/json"
+	"fmt"
 	"log"
 	"testing"
 
@@ -12,45 +12,70 @@ type outstruct struct {
 	One   string   `rjson:"uwu.nya"`
 	Two   int      `rjson:"one.two.three.num"`
 	Three []string `rjson:"one.arr"`
-	Four  any      `rjson:"one.two.three"`
-}
-
-type recursiveJson struct {
-	Uwu struct {
-		Nya string `json:"nya"`
-	} `json:"uwu"`
-	One struct {
-		Two struct {
-			Three struct {
-				Num int `json:"num"`
-			} `json:"three"`
-		} `json:"two"`
-		Arr []string `json:"arr"`
-	} `json:"one"`
+	Four  string   `rjson:"one.arr[0]"`
+	Five  string   `rjson:"jarray[0].mrow"`
+	Six   []string `rjson:"combined[].str"`
+	Seven []int    `rjson:"combined[]num"`
+	Eight []any    `rjson:"combined[].r"`
 }
 
 func TestTag(t *testing.T) {
 	one := ">_<"
 	two := 1
 	three := []string{"mrow", "OWO"}
+	five := "asdasdasdasd"
 
-	j := recursiveJson{}
-	j.Uwu.Nya = one
-	j.One.Two.Three.Num = two
-	j.One.Arr = three
-
-	bs, err := json.Marshal(j)
-	if err != nil {
-		log.Fatal(err)
+	bs := []byte(fmt.Sprintf(`
+	{
+		"uwu": {
+			"nya": "%s"
+		},
+		"combined": [
+			{
+				"str": "1",
+				"num": 1,
+				"r": {
+					"different": "mrp"
+				}
+			},
+			{
+				"str": "2",
+				"num": 2,
+				"r": {
+					"fields": "mrp"
+				}
+			}
+		],
+		"jarray": [
+			{
+				"mrow": "%s"
+			},
+			{
+				"1": "uwu"
+			}
+		],
+		"one": {
+			"two": {
+				"three": {
+					"num": %d
+				}
+			},
+			"arr": ["%s", "%s"]
+		}
 	}
+	`, one, five, two, three[0], three[1]))
 
 	var out outstruct
-	if err = Unmarshal(bs, &out); err != nil {
+	if err := Unmarshal(bs, &out); err != nil {
 		log.Fatal(err)
 	}
 
 	testingassert.AssertEquals(t, out.One, one)
 	testingassert.AssertEquals(t, out.Two, two)
 	testingassert.AssertEqualsDeep(t, out.Three, three)
-	t.Log(out.Four)
+	testingassert.AssertEquals(t, out.Four, three[0])
+	testingassert.AssertEquals(t, out.Five, five)
+	testingassert.AssertEqualsDeep(t, out.Six, []string{"1", "2"})
+	testingassert.AssertEqualsDeep(t, out.Seven, []int{1, 2})
+	t.Log(out.Eight)
 }

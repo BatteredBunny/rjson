@@ -3,41 +3,143 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"log"
 	"reflect"
+	"strconv"
 	"strings"
+	"text/scanner"
 )
+
+var ErrNotAPointer = errors.New("Please insert a pointer")
+var ErrMalformedSyntax = errors.New("Malformed tag syntax")
 
 const tagname = "rjson"
 const divider = "."
 
-func valueFinder(input []byte, tag string) (result json.RawMessage) {
-	fields := strings.Split(strings.TrimSuffix(tag, divider), divider)
+type SymbolType = int
 
-	var object map[string]json.RawMessage
-	if err := json.Unmarshal(input, &object); err != nil {
-		log.Fatal(err)
+const (
+	SymbolTypeName SymbolType = iota
+	SymbolTypeArrayAccess
+	SymbolTypeArray
+)
+
+type Symbol struct {
+	Type    SymbolType
+	Content any
+}
+
+func valueFinder(input []byte, tag string) (object json.RawMessage, err error) {
+	var s scanner.Scanner
+	s.Init(strings.NewReader(tag))
+
+	var symbols []Symbol
+	var array_started bool
+	var array_has_number bool
+	for tok := s.Scan(); tok != scanner.EOF; tok = s.Scan() {
+		if s.TokenText() == "[" {
+			if array_started {
+				err = ErrMalformedSyntax
+				return
+			}
+
+			array_started = true
+		} else if s.TokenText() == "]" {
+			if !array_started {
+				err = ErrMalformedSyntax
+				return
+			}
+
+			if !array_has_number {
+				symbols = append(symbols, Symbol{Type: SymbolTypeArray})
+			}
+
+			array_started = false
+			array_has_number = false
+		} else if s.TokenText() == "." {
+			continue
+		} else {
+			if array_started {
+				var i int
+				i, err = strconv.Atoi(s.TokenText())
+				if err != nil {
+					return
+				}
+
+				symbols = append(symbols, Symbol{Type: SymbolTypeArrayAccess, Content: i})
+				array_has_number = true
+			} else {
+				symbols = append(symbols, Symbol{Type: SymbolTypeName, Content: s.TokenText()})
+			}
+		}
 	}
 
-	for i, field := range fields {
-		log.Println(string(object[field]), i == len(fields)-1)
+	if err = json.Unmarshal(input, &object); err != nil {
+		return
+	}
 
-		var err error
-		if i == len(fields)-1 {
-			err = json.Unmarshal(object[field], &result)
-		} else {
-			err = json.Unmarshal(object[field], &object)
+	var last_symbol_was_array bool
+	for _, symbol := range symbols {
+		switch symbol.Type {
+		case SymbolTypeName:
+			if last_symbol_was_array {
+				var input []json.RawMessage
+				if err = json.Unmarshal(object, &input); err != nil {
+					return
+				}
+
+				var result []json.RawMessage
+				for _, row := range input {
+					var obj map[string]json.RawMessage
+					if err = json.Unmarshal(row, &obj); err != nil {
+						return
+					}
+
+					var v json.RawMessage
+					if err = json.Unmarshal(obj[symbol.Content.(string)], &v); err != nil {
+						return
+					}
+
+					result = append(result, v)
+				}
+
+				var bs []byte
+				bs, err = json.Marshal(result)
+				if err != nil {
+					return
+				}
+
+				if err = json.Unmarshal(bs, &object); err != nil {
+					return
+				}
+			} else {
+				var obj map[string]json.RawMessage
+
+				if err = json.Unmarshal(object, &obj); err != nil {
+					return
+				}
+
+				if err = json.Unmarshal(obj[symbol.Content.(string)], &object); err != nil {
+					return
+				}
+			}
+		case SymbolTypeArrayAccess:
+			var obj []json.RawMessage
+			if err = json.Unmarshal(object, &obj); err != nil {
+				return
+			}
+
+			object = obj[symbol.Content.(int)]
+		case SymbolTypeArray:
+			last_symbol_was_array = true
 		}
 
 		if err != nil {
-			log.Fatal(err)
+			return
 		}
 	}
 
 	return
 }
-
-var ErrNotAPointer = errors.New("Please insert a pointer")
 
 // Unmarshal parses the JSON-encoded data and stores the result in the value pointed to by v. If v is nil or not a pointer, Unmarshal returns an ErrNotAPointer.
 func Unmarshal(data []byte, v any) (err error) {
@@ -57,7 +159,13 @@ func Unmarshal(data []byte, v any) (err error) {
 			test := reflect.New(valuefield.Type())
 			inter := test.Interface()
 
-			if err = json.Unmarshal(valueFinder(data, tag), &inter); err != nil {
+			var res json.RawMessage
+			res, err = valueFinder(data, tag)
+			if err != nil {
+				return
+			}
+
+			if err = json.Unmarshal(res, &inter); err != nil {
 				return
 			}
 
