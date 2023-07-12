@@ -39,6 +39,7 @@ func valueFinder(input []byte, tag string) (result json.RawMessage) {
 
 var ErrNotAPointer = errors.New("Please insert a pointer")
 
+// Unmarshal parses the JSON-encoded data and stores the result in the value pointed to by v. If v is nil or not a pointer, Unmarshal returns an ErrNotAPointer.
 func Unmarshal(data []byte, v any) (err error) {
 	rv := reflect.ValueOf(v)
 	if rv.Kind() != reflect.Pointer || rv.IsNil() {
