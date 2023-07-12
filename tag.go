@@ -23,6 +23,7 @@ type symbolType = int
 const (
 	symbolTypeName symbolType = iota
 	symbolTypeArrayAccess
+	symbolTypeArrayLast
 	symbolTypeArray
 )
 
@@ -37,7 +38,7 @@ func valueFinder(input []byte, tag string) (object json.RawMessage, err error) {
 
 	var symbols []symbol
 	var array_started bool
-	var array_has_number bool
+	var array_filled bool
 	for tok := s.Scan(); tok != scanner.EOF; tok = s.Scan() {
 		if s.TokenText() == ArrayOpen {
 			if array_started {
@@ -52,24 +53,30 @@ func valueFinder(input []byte, tag string) (object json.RawMessage, err error) {
 				return
 			}
 
-			if !array_has_number {
+			if !array_filled {
 				symbols = append(symbols, symbol{Type: symbolTypeArray})
 			}
 
 			array_started = false
-			array_has_number = false
+			array_filled = false
 		} else if s.TokenText() == Divider {
 			continue
 		} else {
 			if array_started {
-				var i int
-				i, err = strconv.Atoi(s.TokenText())
-				if err != nil {
-					return
+				token := s.TokenText()
+				if token == "-" {
+					symbols = append(symbols, symbol{Type: symbolTypeArrayLast})
+				} else {
+					var i int
+					i, err = strconv.Atoi(token)
+					if err != nil {
+						return
+					}
+
+					symbols = append(symbols, symbol{Type: symbolTypeArrayAccess, Content: i})
 				}
 
-				symbols = append(symbols, symbol{Type: symbolTypeArrayAccess, Content: i})
-				array_has_number = true
+				array_filled = true
 			} else {
 				symbols = append(symbols, symbol{Type: symbolTypeName, Content: s.TokenText()})
 			}
@@ -132,6 +139,13 @@ func valueFinder(input []byte, tag string) (object json.RawMessage, err error) {
 			}
 
 			object = obj[s.Content.(int)]
+		case symbolTypeArrayLast:
+			var obj []json.RawMessage
+			if err = json.Unmarshal(object, &obj); err != nil {
+				return
+			}
+
+			object = obj[len(obj)-1]
 		case symbolTypeArray:
 			last_symbol_was_array = true
 		}

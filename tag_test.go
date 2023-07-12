@@ -22,6 +22,7 @@ type outstruct struct {
 	Nine []struct {
 		Text string `rjson:"str"`
 	} `rjson:"combined"`
+	Ten string `rjson:"combined[-].str"`
 }
 
 func TestTag(t *testing.T) {
@@ -85,4 +86,5 @@ func TestTag(t *testing.T) {
 	testingassert.AssertEquals(t, out.Eight.Text, one)
 	testingassert.AssertEquals(t, out.Nine[0].Text, "1")
 	testingassert.AssertEquals(t, out.Nine[1].Text, "2")
+	testingassert.AssertEquals(t, out.Ten, "2")
 }
