@@ -3,6 +3,7 @@ package rjson
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -12,10 +13,10 @@ import (
 var ErrNotAPointer = errors.New("Please insert a pointer")
 var ErrMalformedSyntax = errors.New("Malformed tag syntax")
 
-const tagname = "rjson"
-const divider = "."
-const array_open = "["
-const array_close = "]"
+const TagName = "rjson"
+const Divider = "."
+const ArrayOpen = "["
+const ArrayClose = "]"
 
 type symbolType = int
 
@@ -38,14 +39,14 @@ func valueFinder(input []byte, tag string) (object json.RawMessage, err error) {
 	var array_started bool
 	var array_has_number bool
 	for tok := s.Scan(); tok != scanner.EOF; tok = s.Scan() {
-		if s.TokenText() == array_open {
+		if s.TokenText() == ArrayOpen {
 			if array_started {
 				err = ErrMalformedSyntax
 				return
 			}
 
 			array_started = true
-		} else if s.TokenText() == array_close {
+		} else if s.TokenText() == ArrayClose {
 			if !array_started {
 				err = ErrMalformedSyntax
 				return
@@ -57,7 +58,7 @@ func valueFinder(input []byte, tag string) (object json.RawMessage, err error) {
 
 			array_started = false
 			array_has_number = false
-		} else if s.TokenText() == divider {
+		} else if s.TokenText() == Divider {
 			continue
 		} else {
 			if array_started {
@@ -143,6 +144,94 @@ func valueFinder(input []byte, tag string) (object json.RawMessage, err error) {
 	return
 }
 
+func handleStructFields(data []byte, tag string, rv reflect.Value, is_nested bool) (err error) {
+	t := reflect.Indirect(rv).Type()
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		currenttag := field.Tag.Get(TagName)
+		valuefield := reflect.Indirect(rv).Field(i)
+
+		var ct string
+		if currenttag != "" && t.Field(i).IsExported() {
+			if field.Type.Kind() == reflect.Struct {
+				if is_nested {
+					ct = fmt.Sprintf("%s.%s", tag, currenttag)
+				} else {
+					ct = fmt.Sprintf("%s[%d]%s", tag, i, currenttag)
+				}
+
+				if err = handleStructFields(data, ct, valuefield, false); err != nil {
+					return
+				}
+			} else if field.Type.Kind() == reflect.Slice && field.Type.Elem().Kind() == reflect.Struct {
+				if is_nested {
+					ct = fmt.Sprintf("%s.%s", tag, currenttag)
+				} else {
+					ct = fmt.Sprintf("%s[%d]%s", tag, i, currenttag)
+				}
+
+				var res json.RawMessage
+				res, err = valueFinder(data, ct)
+				if err != nil {
+					return
+				}
+
+				var arr []json.RawMessage
+				if err = json.Unmarshal(res, &arr); err != nil {
+					return
+				}
+
+				for j := 0; j < len(arr); j++ {
+					valuefield.Set(reflect.Append(valuefield, reflect.Indirect(reflect.New(valuefield.Type().Elem()))))
+					if is_nested {
+						ct = fmt.Sprintf("%s.%s[%d]", tag, currenttag, j)
+					} else {
+						ct = fmt.Sprintf("%s[%d]", currenttag, j)
+					}
+
+					sv := valuefield.Index(j)
+					if err = handleStructFields(data, ct, sv, false); err != nil {
+						return
+					}
+				}
+			} else {
+				if is_nested {
+					ct = currenttag
+				} else {
+					ct = tag + "." + currenttag
+				}
+
+				if err = handleFields(data, ct, valuefield); err != nil {
+					return
+				}
+			}
+		}
+	}
+
+	return
+}
+
+func handleFields(data []byte, tag string, rv reflect.Value) (err error) {
+	empty_value := reflect.New(rv.Type())
+	inter := empty_value.Interface()
+
+	var res json.RawMessage
+	res, err = valueFinder(data, tag)
+	if err != nil {
+		return
+	}
+
+	if err = json.Unmarshal(res, &inter); err != nil {
+		return
+	}
+
+	if rv.CanSet() {
+		rv.Set(reflect.Indirect(empty_value))
+	}
+
+	return
+}
+
 // Unmarshal parses the JSON-encoded data and stores the result in the value pointed to by v. If v is nil or not a pointer, Unmarshal returns an ErrNotAPointer.
 func Unmarshal(data []byte, v any) (err error) {
 	rv := reflect.ValueOf(v)
@@ -150,32 +239,7 @@ func Unmarshal(data []byte, v any) (err error) {
 		return ErrNotAPointer
 	}
 
-	t := rv.Elem().Type()
-
-	for i := 0; i < t.NumField(); i++ {
-		field := t.Field(i)
-		tag := field.Tag.Get(tagname)
-
-		if tag != "" && field.IsExported() {
-			valuefield := rv.Elem().Field(i)
-			test := reflect.New(valuefield.Type())
-			inter := test.Interface()
-
-			var res json.RawMessage
-			res, err = valueFinder(data, tag)
-			if err != nil {
-				return
-			}
-
-			if err = json.Unmarshal(res, &inter); err != nil {
-				return
-			}
-
-			if valuefield.CanSet() {
-				valuefield.Set(reflect.Indirect(test))
-			}
-		}
-	}
+	handleStructFields(data, "", rv, true)
 
 	return
 }

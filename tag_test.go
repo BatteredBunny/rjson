@@ -16,7 +16,12 @@ type outstruct struct {
 	Five  string   `rjson:"jarray[0].mrow"`
 	Six   []string `rjson:"combined[].str"`
 	Seven []int    `rjson:"combined[]num"`
-	Eight []any    `rjson:"combined[].r"`
+	Eight struct {
+		Text string `rjson:"nya"`
+	} `rjson:"uwu"`
+	Nine []struct {
+		Text string `rjson:"str"`
+	} `rjson:"combined"`
 }
 
 func TestTag(t *testing.T) {
@@ -77,5 +82,7 @@ func TestTag(t *testing.T) {
 	testingassert.AssertEquals(t, out.Five, five)
 	testingassert.AssertEqualsDeep(t, out.Six, []string{"1", "2"})
 	testingassert.AssertEqualsDeep(t, out.Seven, []int{1, 2})
-	t.Log(out.Eight)
+	testingassert.AssertEquals(t, out.Eight.Text, one)
+	testingassert.AssertEquals(t, out.Nine[0].Text, "1")
+	testingassert.AssertEquals(t, out.Nine[1].Text, "2")
 }
