@@ -13,7 +13,7 @@ For a full example have a look at `tag_test.go`
 ```json
 {
     "uwu": {
-        "nya": "\u003e_\u003c"
+        "nya": "123"
     },
     "one": {
         "two": {
@@ -22,8 +22,8 @@ For a full example have a look at `tag_test.go`
             }
         },
         "arr": [
-            "mrow",
-            "OWO"
+            "a",
+            "b"
         ]
     }
 }
@@ -31,8 +31,9 @@ For a full example have a look at `tag_test.go`
 
 ```go
 type Out struct {
-	One   string   `rjson:"uwu.nya"`
-	Two   int      `rjson:"one.two.three.num"`
-	Three []string `rjson:"one.arr"`
+	One     string      `rjson:"uwu.nya"`           // "123"
+	Two     int         `rjson:"one.two.three.num"` // 1
+	Three   []string    `rjson:"one.arr"`           // ["a","b"]
+    Four    string      `rjson:"one.arr[0]"`        // "a"
 }
 ```
