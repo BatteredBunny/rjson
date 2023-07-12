@@ -8,14 +8,14 @@ import (
 	"github.com/ayes-web/testingassert"
 )
 
-type Out struct {
+type outstruct struct {
 	One   string   `rjson:"uwu.nya"`
 	Two   int      `rjson:"one.two.three.num"`
 	Three []string `rjson:"one.arr"`
 	Four  any      `rjson:"one.two.three"`
 }
 
-type RecursiveJson struct {
+type recursiveJson struct {
 	Uwu struct {
 		Nya string `json:"nya"`
 	} `json:"uwu"`
@@ -34,7 +34,7 @@ func TestTag(t *testing.T) {
 	two := 1
 	three := []string{"mrow", "OWO"}
 
-	j := RecursiveJson{}
+	j := recursiveJson{}
 	j.Uwu.Nya = one
 	j.One.Two.Three.Num = two
 	j.One.Arr = three
@@ -44,7 +44,7 @@ func TestTag(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	var out Out
+	var out outstruct
 	if err = Unmarshal(bs, &out); err != nil {
 		log.Fatal(err)
 	}

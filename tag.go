@@ -11,7 +11,7 @@ import (
 const tagname = "rjson"
 const divider = "."
 
-func ValueFinder(input []byte, tag string) (result json.RawMessage) {
+func valueFinder(input []byte, tag string) (result json.RawMessage) {
 	fields := strings.Split(strings.TrimSuffix(tag, divider), divider)
 
 	var object map[string]json.RawMessage
@@ -56,7 +56,7 @@ func Unmarshal(data []byte, v any) (err error) {
 			test := reflect.New(valuefield.Type())
 			inter := test.Interface()
 
-			if err = json.Unmarshal(ValueFinder(data, tag), &inter); err != nil {
+			if err = json.Unmarshal(valueFinder(data, tag), &inter); err != nil {
 				return
 			}
 
