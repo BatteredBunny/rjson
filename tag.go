@@ -14,6 +14,8 @@ var ErrMalformedSyntax = errors.New("Malformed tag syntax")
 
 const tagname = "rjson"
 const divider = "."
+const array_open = "["
+const array_close = "]"
 
 type SymbolType = int
 
@@ -36,14 +38,14 @@ func valueFinder(input []byte, tag string) (object json.RawMessage, err error) {
 	var array_started bool
 	var array_has_number bool
 	for tok := s.Scan(); tok != scanner.EOF; tok = s.Scan() {
-		if s.TokenText() == "[" {
+		if s.TokenText() == array_open {
 			if array_started {
 				err = ErrMalformedSyntax
 				return
 			}
 
 			array_started = true
-		} else if s.TokenText() == "]" {
+		} else if s.TokenText() == array_close {
 			if !array_started {
 				err = ErrMalformedSyntax
 				return
@@ -55,7 +57,7 @@ func valueFinder(input []byte, tag string) (object json.RawMessage, err error) {
 
 			array_started = false
 			array_has_number = false
-		} else if s.TokenText() == "." {
+		} else if s.TokenText() == divider {
 			continue
 		} else {
 			if array_started {
