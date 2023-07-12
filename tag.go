@@ -170,36 +170,8 @@ func handleStructFields(data []byte, tag string, rv reflect.Value, not_nested bo
 					ct = fmt.Sprintf("%s[%d]%s", tag, i, currenttag)
 				}
 
-				var res json.RawMessage
-				res, err = valueFinder(data, ct)
-				if err != nil {
+				if err = handleStructSlies(data, ct, valuefield); err != nil {
 					return
-				}
-
-				// var bs []byte
-				// bs, err = res.MarshalJSON()
-				// if err != nil {
-				// 	return
-				// }
-
-				var arr []json.RawMessage
-				if err = json.Unmarshal(res, &arr); err != nil {
-					return
-				}
-
-				for j := 0; j < len(arr); j++ {
-					var bs []byte
-					bs, err = arr[j].MarshalJSON()
-					if err != nil {
-						return
-					}
-
-					valuefield.Set(reflect.Append(valuefield, reflect.Indirect(reflect.New(valuefield.Type().Elem()))))
-					sv := valuefield.Index(j)
-
-					if err = handleStructFields(bs, "", sv, true); err != nil {
-						return
-					}
 				}
 			} else {
 				if not_nested {
@@ -212,6 +184,36 @@ func handleStructFields(data []byte, tag string, rv reflect.Value, not_nested bo
 					return
 				}
 			}
+		}
+	}
+
+	return
+}
+
+func handleStructSlies(data []byte, tag string, rv reflect.Value) (err error) {
+	var res json.RawMessage
+	res, err = valueFinder(data, tag)
+	if err != nil {
+		return
+	}
+
+	var arr []json.RawMessage
+	if err = json.Unmarshal(res, &arr); err != nil {
+		return
+	}
+
+	for j := 0; j < len(arr); j++ {
+		rv.Set(reflect.Append(rv, reflect.Indirect(reflect.New(rv.Type().Elem()))))
+		sv := rv.Index(j)
+
+		var bs []byte
+		bs, err = arr[j].MarshalJSON()
+		if err != nil {
+			return
+		}
+
+		if err = handleStructFields(bs, "", sv, true); err != nil {
+			return
 		}
 	}
 
