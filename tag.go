@@ -144,7 +144,7 @@ func valueFinder(input []byte, tag string) (object json.RawMessage, err error) {
 	return
 }
 
-func handleStructFields(data []byte, tag string, rv reflect.Value, is_nested bool) (err error) {
+func handleStructFields(data []byte, tag string, rv reflect.Value, not_nested bool) (err error) {
 	t := reflect.Indirect(rv).Type()
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
@@ -154,7 +154,7 @@ func handleStructFields(data []byte, tag string, rv reflect.Value, is_nested boo
 		var ct string
 		if currenttag != "" && t.Field(i).IsExported() {
 			if field.Type.Kind() == reflect.Struct {
-				if is_nested {
+				if not_nested {
 					ct = fmt.Sprintf("%s.%s", tag, currenttag)
 				} else {
 					ct = fmt.Sprintf("%s[%d]%s", tag, i, currenttag)
@@ -164,7 +164,7 @@ func handleStructFields(data []byte, tag string, rv reflect.Value, is_nested boo
 					return
 				}
 			} else if field.Type.Kind() == reflect.Slice && field.Type.Elem().Kind() == reflect.Struct {
-				if is_nested {
+				if not_nested {
 					ct = fmt.Sprintf("%s.%s", tag, currenttag)
 				} else {
 					ct = fmt.Sprintf("%s[%d]%s", tag, i, currenttag)
@@ -176,26 +176,33 @@ func handleStructFields(data []byte, tag string, rv reflect.Value, is_nested boo
 					return
 				}
 
+				// var bs []byte
+				// bs, err = res.MarshalJSON()
+				// if err != nil {
+				// 	return
+				// }
+
 				var arr []json.RawMessage
 				if err = json.Unmarshal(res, &arr); err != nil {
 					return
 				}
 
 				for j := 0; j < len(arr); j++ {
-					valuefield.Set(reflect.Append(valuefield, reflect.Indirect(reflect.New(valuefield.Type().Elem()))))
-					if is_nested {
-						ct = fmt.Sprintf("%s.%s[%d]", tag, currenttag, j)
-					} else {
-						ct = fmt.Sprintf("%s[%d]", currenttag, j)
+					var bs []byte
+					bs, err = arr[j].MarshalJSON()
+					if err != nil {
+						return
 					}
 
+					valuefield.Set(reflect.Append(valuefield, reflect.Indirect(reflect.New(valuefield.Type().Elem()))))
 					sv := valuefield.Index(j)
-					if err = handleStructFields(data, ct, sv, false); err != nil {
+
+					if err = handleStructFields(bs, "", sv, true); err != nil {
 						return
 					}
 				}
 			} else {
-				if is_nested {
+				if not_nested {
 					ct = currenttag
 				} else {
 					ct = tag + "." + currenttag
