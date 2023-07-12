@@ -17,16 +17,16 @@ const divider = "."
 const array_open = "["
 const array_close = "]"
 
-type SymbolType = int
+type symbolType = int
 
 const (
-	SymbolTypeName SymbolType = iota
-	SymbolTypeArrayAccess
-	SymbolTypeArray
+	symbolTypeName symbolType = iota
+	symbolTypeArrayAccess
+	symbolTypeArray
 )
 
-type Symbol struct {
-	Type    SymbolType
+type symbol struct {
+	Type    symbolType
 	Content any
 }
 
@@ -34,7 +34,7 @@ func valueFinder(input []byte, tag string) (object json.RawMessage, err error) {
 	var s scanner.Scanner
 	s.Init(strings.NewReader(tag))
 
-	var symbols []Symbol
+	var symbols []symbol
 	var array_started bool
 	var array_has_number bool
 	for tok := s.Scan(); tok != scanner.EOF; tok = s.Scan() {
@@ -52,7 +52,7 @@ func valueFinder(input []byte, tag string) (object json.RawMessage, err error) {
 			}
 
 			if !array_has_number {
-				symbols = append(symbols, Symbol{Type: SymbolTypeArray})
+				symbols = append(symbols, symbol{Type: symbolTypeArray})
 			}
 
 			array_started = false
@@ -67,10 +67,10 @@ func valueFinder(input []byte, tag string) (object json.RawMessage, err error) {
 					return
 				}
 
-				symbols = append(symbols, Symbol{Type: SymbolTypeArrayAccess, Content: i})
+				symbols = append(symbols, symbol{Type: symbolTypeArrayAccess, Content: i})
 				array_has_number = true
 			} else {
-				symbols = append(symbols, Symbol{Type: SymbolTypeName, Content: s.TokenText()})
+				symbols = append(symbols, symbol{Type: symbolTypeName, Content: s.TokenText()})
 			}
 		}
 	}
@@ -80,9 +80,9 @@ func valueFinder(input []byte, tag string) (object json.RawMessage, err error) {
 	}
 
 	var last_symbol_was_array bool
-	for _, symbol := range symbols {
-		switch symbol.Type {
-		case SymbolTypeName:
+	for _, s := range symbols {
+		switch s.Type {
+		case symbolTypeName:
 			if last_symbol_was_array {
 				var input []json.RawMessage
 				if err = json.Unmarshal(object, &input); err != nil {
@@ -97,7 +97,7 @@ func valueFinder(input []byte, tag string) (object json.RawMessage, err error) {
 					}
 
 					var v json.RawMessage
-					if err = json.Unmarshal(obj[symbol.Content.(string)], &v); err != nil {
+					if err = json.Unmarshal(obj[s.Content.(string)], &v); err != nil {
 						return
 					}
 
@@ -120,18 +120,18 @@ func valueFinder(input []byte, tag string) (object json.RawMessage, err error) {
 					return
 				}
 
-				if err = json.Unmarshal(obj[symbol.Content.(string)], &object); err != nil {
+				if err = json.Unmarshal(obj[s.Content.(string)], &object); err != nil {
 					return
 				}
 			}
-		case SymbolTypeArrayAccess:
+		case symbolTypeArrayAccess:
 			var obj []json.RawMessage
 			if err = json.Unmarshal(object, &obj); err != nil {
 				return
 			}
 
-			object = obj[symbol.Content.(int)]
-		case SymbolTypeArray:
+			object = obj[s.Content.(int)]
+		case symbolTypeArray:
 			last_symbol_was_array = true
 		}
 
