@@ -168,6 +168,10 @@ func handleStructFields(data []byte, tag string, rv reflect.Value, notNested boo
 		currentTag := field.Tag.Get(TagName)
 		valueField := reflect.Indirect(rv).Field(i)
 
+		if Debug {
+			fmt.Printf("Handling field %s with %s tag name\n", field.Name, currentTag)
+		}
+
 		var ct string
 		if currentTag != "" && t.Field(i).IsExported() {
 			if field.Type.Kind() == reflect.Struct {
