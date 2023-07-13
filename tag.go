@@ -1,13 +1,14 @@
 package rjson
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
 	"text/scanner"
+
+	"github.com/goccy/go-json"
 )
 
 var ErrNotAPointer = errors.New("please insert a pointer")
