@@ -182,6 +182,9 @@ func handleStructFields(data []byte, tag string, rv reflect.Value, notNested boo
 				}
 
 				if err = handleStructFields(data, ct, valueField, false); errors.Unwrap(err) == ErrCantFindField {
+					if Debug {
+						fmt.Println("WARNING:", err)
+					}
 					continue
 				} else if err != nil {
 					return
@@ -194,6 +197,9 @@ func handleStructFields(data []byte, tag string, rv reflect.Value, notNested boo
 				}
 
 				if err = handleStructSlices(data, ct, valueField); errors.Unwrap(err) == ErrCantFindField {
+					if Debug {
+						fmt.Println("WARNING:", err)
+					}
 					continue
 				} else if err != nil {
 					return
@@ -206,6 +212,9 @@ func handleStructFields(data []byte, tag string, rv reflect.Value, notNested boo
 				}
 
 				if err = handleFields(data, ct, valueField); errors.Unwrap(err) == ErrCantFindField {
+					if Debug {
+						fmt.Println("WARNING:", err)
+					}
 					continue
 				} else if err != nil {
 					return
@@ -240,6 +249,9 @@ func handleStructSlices(data []byte, tag string, rv reflect.Value) (err error) {
 		}
 
 		if err = handleStructFields(bs, "", sv, true); errors.Unwrap(err) == ErrCantFindField {
+			if Debug {
+				fmt.Println("WARNING:", err)
+			}
 			continue
 		} else if err != nil {
 			return
