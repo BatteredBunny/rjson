@@ -1,6 +1,6 @@
-<h1 align="center">rjson</h1> 
+<h1 align="center">rjson</h1>
 
-a jq like library for golang that helps simplify recursive json
+a jq like library for golang that helps parse nested json
 
 ```
 go get github.com/ayes-web/rjson
