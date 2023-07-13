@@ -14,6 +14,7 @@ import (
 var ErrNotAPointer = errors.New("please insert a pointer")
 var ErrMalformedSyntax = errors.New("malformed tag syntax")
 var ErrCantFindField = errors.New("cant find field")
+var ErrInvalidIndex = errors.New("invalid slice index")
 
 const TagName = "rjson"
 const Divider = "."
@@ -145,14 +146,26 @@ func QueryJson(data []byte, tag string) (object json.RawMessage, err error) {
 				return
 			}
 
-			object = obj[sym.Content.(int)]
+			i := sym.Content.(int)
+			if i > len(obj) {
+				err = fmt.Errorf("%w %s", ErrInvalidIndex, sym.Content)
+				return
+			} else {
+				object = obj[i]
+			}
 		case symbolTypeArrayLast:
 			var obj []json.RawMessage
 			if err = json.Unmarshal(object, &obj); err != nil {
 				return
 			}
 
-			object = obj[len(obj)-1]
+			i := len(obj) - 1
+			if i > len(obj) {
+				err = fmt.Errorf("%w %s", ErrInvalidIndex, sym.Content)
+				return
+			} else {
+				object = obj[i]
+			}
 		case symbolTypeArray:
 			lastSymbolWasArray = true
 		}
@@ -181,7 +194,7 @@ func handleStructFields(data []byte, tag string, rv reflect.Value, notNested boo
 					ct = fmt.Sprintf("%s[%d]%s", tag, i, currentTag)
 				}
 
-				if err = handleStructFields(data, ct, valueField, false); errors.Unwrap(err) == ErrCantFindField {
+				if err = handleStructFields(data, ct, valueField, false); errors.Unwrap(err) == ErrCantFindField || errors.Unwrap(err) == ErrInvalidIndex {
 					if Debug {
 						fmt.Println("WARNING:", err)
 					}
@@ -197,7 +210,7 @@ func handleStructFields(data []byte, tag string, rv reflect.Value, notNested boo
 					ct = fmt.Sprintf("%s[%d]%s", tag, i, currentTag)
 				}
 
-				if err = handleStructSlices(data, ct, valueField); errors.Unwrap(err) == ErrCantFindField {
+				if err = handleStructSlices(data, ct, valueField); errors.Unwrap(err) == ErrCantFindField || errors.Unwrap(err) == ErrInvalidIndex {
 					if Debug {
 						fmt.Println("WARNING:", err)
 					}
@@ -213,7 +226,7 @@ func handleStructFields(data []byte, tag string, rv reflect.Value, notNested boo
 					ct = tag + "." + currentTag
 				}
 
-				if err = handleFields(data, ct, valueField); errors.Unwrap(err) == ErrCantFindField {
+				if err = handleFields(data, ct, valueField); errors.Unwrap(err) == ErrCantFindField || errors.Unwrap(err) == ErrInvalidIndex {
 					if Debug {
 						fmt.Println("WARNING:", err)
 					}
@@ -251,7 +264,7 @@ func handleStructSlices(data []byte, tag string, rv reflect.Value) (err error) {
 			return
 		}
 
-		if err = handleStructFields(bs, "", sv, true); errors.Unwrap(err) == ErrCantFindField {
+		if err = handleStructFields(bs, "", sv, true); errors.Unwrap(err) == ErrCantFindField || errors.Unwrap(err) == ErrInvalidIndex {
 			if Debug {
 				fmt.Println("WARNING:", err)
 			}
