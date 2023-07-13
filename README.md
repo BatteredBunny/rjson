@@ -53,6 +53,7 @@ type Out struct {
 
 - e.g `arr[].text`
 
+In
 ```json
 [
     {
@@ -65,6 +66,8 @@ type Out struct {
     }
 ]
 ```
+
+Out
 ```json
 [
     {

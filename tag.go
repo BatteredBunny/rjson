@@ -10,13 +10,15 @@ import (
 	"text/scanner"
 )
 
-var ErrNotAPointer = errors.New("Please insert a pointer")
-var ErrMalformedSyntax = errors.New("Malformed tag syntax")
+var ErrNotAPointer = errors.New("please insert a pointer")
+var ErrMalformedSyntax = errors.New("malformed tag syntax")
+var ErrCantFindField = errors.New("cant find field")
 
 const TagName = "rjson"
 const Divider = "."
 const ArrayOpen = "["
 const ArrayClose = "]"
+const ArrayLast = "-"
 
 type symbolType = int
 
@@ -32,67 +34,68 @@ type symbol struct {
 	Content any
 }
 
-func valueFinder(input []byte, tag string) (object json.RawMessage, err error) {
+func valueFinder(data []byte, tag string) (object json.RawMessage, err error) {
 	var s scanner.Scanner
 	s.Init(strings.NewReader(tag))
 
 	var symbols []symbol
-	var array_started bool
-	var array_filled bool
+	var arrayStarted bool
+	var arrayFilled bool
 	for tok := s.Scan(); tok != scanner.EOF; tok = s.Scan() {
-		if s.TokenText() == ArrayOpen {
-			if array_started {
+		token := s.TokenText()
+		switch token {
+		case ArrayOpen:
+			if arrayStarted {
 				err = ErrMalformedSyntax
 				return
 			}
 
-			array_started = true
-		} else if s.TokenText() == ArrayClose {
-			if !array_started {
+			arrayStarted = true
+		case ArrayClose:
+			if !arrayStarted {
 				err = ErrMalformedSyntax
 				return
-			}
-
-			if !array_filled {
+			} else if !arrayFilled {
 				symbols = append(symbols, symbol{Type: symbolTypeArray})
 			}
 
-			array_started = false
-			array_filled = false
-		} else if s.TokenText() == Divider {
+			arrayStarted = false
+			arrayFilled = false
+		case Divider:
 			continue
-		} else {
-			if array_started {
-				token := s.TokenText()
-				if token == "-" {
-					symbols = append(symbols, symbol{Type: symbolTypeArrayLast})
-				} else {
-					var i int
-					i, err = strconv.Atoi(token)
-					if err != nil {
-						return
-					}
-
-					symbols = append(symbols, symbol{Type: symbolTypeArrayAccess, Content: i})
+		case ArrayLast:
+			if arrayStarted && !arrayFilled {
+				symbols = append(symbols, symbol{Type: symbolTypeArrayLast})
+				arrayFilled = true
+			}
+		default:
+			if arrayStarted && !arrayFilled {
+				var i int
+				i, err = strconv.Atoi(token)
+				if err != nil {
+					return
 				}
 
-				array_filled = true
+				symbols = append(symbols, symbol{Type: symbolTypeArrayAccess, Content: i})
+				arrayFilled = true
 			} else {
-				symbols = append(symbols, symbol{Type: symbolTypeName, Content: s.TokenText()})
+				symbols = append(symbols, symbol{Type: symbolTypeName, Content: token})
 			}
 		}
+
 	}
 
-	if err = json.Unmarshal(input, &object); err != nil {
+	if err = json.Unmarshal(data, &object); err != nil {
 		return
 	}
 
-	var last_symbol_was_array bool
-	for _, s := range symbols {
-		switch s.Type {
+	var lastSymbolWasArray bool
+	for _, sym := range symbols {
+		switch sym.Type {
 		case symbolTypeName:
-			if last_symbol_was_array {
+			if lastSymbolWasArray {
 				var input []json.RawMessage
+
 				if err = json.Unmarshal(object, &input); err != nil {
 					return
 				}
@@ -105,7 +108,8 @@ func valueFinder(input []byte, tag string) (object json.RawMessage, err error) {
 					}
 
 					var v json.RawMessage
-					if err = json.Unmarshal(obj[s.Content.(string)], &v); err != nil {
+
+					if err = json.Unmarshal(obj[sym.Content.(string)], &v); err != nil {
 						return
 					}
 
@@ -128,7 +132,8 @@ func valueFinder(input []byte, tag string) (object json.RawMessage, err error) {
 					return
 				}
 
-				if err = json.Unmarshal(obj[s.Content.(string)], &object); err != nil {
+				if err = json.Unmarshal(obj[sym.Content.(string)], &object); err != nil {
+					err = fmt.Errorf("%w %s: %s", ErrCantFindField, sym.Content, err)
 					return
 				}
 			}
@@ -138,7 +143,7 @@ func valueFinder(input []byte, tag string) (object json.RawMessage, err error) {
 				return
 			}
 
-			object = obj[s.Content.(int)]
+			object = obj[sym.Content.(int)]
 		case symbolTypeArrayLast:
 			var obj []json.RawMessage
 			if err = json.Unmarshal(object, &obj); err != nil {
@@ -147,54 +152,50 @@ func valueFinder(input []byte, tag string) (object json.RawMessage, err error) {
 
 			object = obj[len(obj)-1]
 		case symbolTypeArray:
-			last_symbol_was_array = true
-		}
-
-		if err != nil {
-			return
+			lastSymbolWasArray = true
 		}
 	}
 
 	return
 }
 
-func handleStructFields(data []byte, tag string, rv reflect.Value, not_nested bool) (err error) {
+func handleStructFields(data []byte, tag string, rv reflect.Value, notNested bool) (err error) {
 	t := reflect.Indirect(rv).Type()
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
-		currenttag := field.Tag.Get(TagName)
-		valuefield := reflect.Indirect(rv).Field(i)
+		currentTag := field.Tag.Get(TagName)
+		valueField := reflect.Indirect(rv).Field(i)
 
 		var ct string
-		if currenttag != "" && t.Field(i).IsExported() {
+		if currentTag != "" && t.Field(i).IsExported() {
 			if field.Type.Kind() == reflect.Struct {
-				if not_nested {
-					ct = fmt.Sprintf("%s.%s", tag, currenttag)
+				if notNested {
+					ct = fmt.Sprintf("%s.%s", tag, currentTag)
 				} else {
-					ct = fmt.Sprintf("%s[%d]%s", tag, i, currenttag)
+					ct = fmt.Sprintf("%s[%d]%s", tag, i, currentTag)
 				}
 
-				if err = handleStructFields(data, ct, valuefield, false); err != nil {
+				if err = handleStructFields(data, ct, valueField, false); err != nil {
 					return
 				}
 			} else if field.Type.Kind() == reflect.Slice && field.Type.Elem().Kind() == reflect.Struct {
-				if not_nested {
-					ct = fmt.Sprintf("%s.%s", tag, currenttag)
+				if notNested {
+					ct = fmt.Sprintf("%s.%s", tag, currentTag)
 				} else {
-					ct = fmt.Sprintf("%s[%d]%s", tag, i, currenttag)
+					ct = fmt.Sprintf("%s[%d]%s", tag, i, currentTag)
 				}
 
-				if err = handleStructSlies(data, ct, valuefield); err != nil {
+				if err = handleStructSlices(data, ct, valueField); err != nil && errors.Unwrap(err) != ErrCantFindField {
 					return
 				}
 			} else {
-				if not_nested {
-					ct = currenttag
+				if notNested {
+					ct = currentTag
 				} else {
-					ct = tag + "." + currenttag
+					ct = tag + "." + currentTag
 				}
 
-				if err = handleFields(data, ct, valuefield); err != nil {
+				if err = handleFields(data, ct, valueField); err != nil && errors.Unwrap(err) != ErrCantFindField {
 					return
 				}
 			}
@@ -204,7 +205,7 @@ func handleStructFields(data []byte, tag string, rv reflect.Value, not_nested bo
 	return
 }
 
-func handleStructSlies(data []byte, tag string, rv reflect.Value) (err error) {
+func handleStructSlices(data []byte, tag string, rv reflect.Value) (err error) {
 	var res json.RawMessage
 	res, err = valueFinder(data, tag)
 	if err != nil {
@@ -235,8 +236,8 @@ func handleStructSlies(data []byte, tag string, rv reflect.Value) (err error) {
 }
 
 func handleFields(data []byte, tag string, rv reflect.Value) (err error) {
-	empty_value := reflect.New(rv.Type())
-	inter := empty_value.Interface()
+	emptyValue := reflect.New(rv.Type())
+	inter := emptyValue.Interface()
 
 	var res json.RawMessage
 	res, err = valueFinder(data, tag)
@@ -249,7 +250,7 @@ func handleFields(data []byte, tag string, rv reflect.Value) (err error) {
 	}
 
 	if rv.CanSet() {
-		rv.Set(reflect.Indirect(empty_value))
+		rv.Set(reflect.Indirect(emptyValue))
 	}
 
 	return
@@ -262,7 +263,9 @@ func Unmarshal(data []byte, v any) (err error) {
 		return ErrNotAPointer
 	}
 
-	handleStructFields(data, "", rv, true)
+	if err = handleStructFields(data, "", rv, true); err != nil {
+		return
+	}
 
 	return
 }
