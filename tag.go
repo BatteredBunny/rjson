@@ -147,7 +147,7 @@ func QueryJson(data []byte, tag string) (object json.RawMessage, err error) {
 			}
 
 			i := sym.Content.(int)
-			if i > len(obj) {
+			if i >= len(obj) {
 				err = fmt.Errorf("%w %s", ErrInvalidIndex, sym.Content)
 				return
 			} else {
@@ -160,7 +160,7 @@ func QueryJson(data []byte, tag string) (object json.RawMessage, err error) {
 			}
 
 			i := len(obj) - 1
-			if i > len(obj) {
+			if i >= len(obj) {
 				err = fmt.Errorf("%w %s", ErrInvalidIndex, sym.Content)
 				return
 			} else {
