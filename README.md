@@ -38,7 +38,7 @@ type Out struct {
 }
 ```
 
-## rjson syntax explanation
+## Syntax explanation
 
 ### Path seperator: "."
 - Dot symbol is used as path seperator, e.g `one.two.three`
