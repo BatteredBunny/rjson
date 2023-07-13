@@ -1,3 +1,3 @@
 package rjson
 
-const Debug = false
+var Debug = false
