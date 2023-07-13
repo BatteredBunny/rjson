@@ -185,6 +185,7 @@ func handleStructFields(data []byte, tag string, rv reflect.Value, notNested boo
 					if Debug {
 						fmt.Println("WARNING:", err)
 					}
+					err = nil
 					continue
 				} else if err != nil {
 					return
@@ -200,6 +201,7 @@ func handleStructFields(data []byte, tag string, rv reflect.Value, notNested boo
 					if Debug {
 						fmt.Println("WARNING:", err)
 					}
+					err = nil
 					continue
 				} else if err != nil {
 					return
@@ -215,6 +217,7 @@ func handleStructFields(data []byte, tag string, rv reflect.Value, notNested boo
 					if Debug {
 						fmt.Println("WARNING:", err)
 					}
+					err = nil
 					continue
 				} else if err != nil {
 					return
