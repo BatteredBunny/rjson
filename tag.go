@@ -35,7 +35,8 @@ type symbol struct {
 	Content any
 }
 
-func valueFinder(data []byte, tag string) (object json.RawMessage, err error) {
+// The underlying function powering the tag, accepts json as bytes
+func QueryJson(data []byte, tag string) (object json.RawMessage, err error) {
 	var s scanner.Scanner
 	s.Init(strings.NewReader(tag))
 
@@ -176,7 +177,9 @@ func handleStructFields(data []byte, tag string, rv reflect.Value, notNested boo
 					ct = fmt.Sprintf("%s[%d]%s", tag, i, currentTag)
 				}
 
-				if err = handleStructFields(data, ct, valueField, false); err != nil {
+				if err = handleStructFields(data, ct, valueField, false); errors.Unwrap(err) == ErrCantFindField {
+					continue
+				} else if err != nil {
 					return
 				}
 			} else if field.Type.Kind() == reflect.Slice && field.Type.Elem().Kind() == reflect.Struct {
@@ -186,7 +189,9 @@ func handleStructFields(data []byte, tag string, rv reflect.Value, notNested boo
 					ct = fmt.Sprintf("%s[%d]%s", tag, i, currentTag)
 				}
 
-				if err = handleStructSlices(data, ct, valueField); err != nil && errors.Unwrap(err) != ErrCantFindField {
+				if err = handleStructSlices(data, ct, valueField); errors.Unwrap(err) == ErrCantFindField {
+					continue
+				} else if err != nil {
 					return
 				}
 			} else {
@@ -196,7 +201,9 @@ func handleStructFields(data []byte, tag string, rv reflect.Value, notNested boo
 					ct = tag + "." + currentTag
 				}
 
-				if err = handleFields(data, ct, valueField); err != nil && errors.Unwrap(err) != ErrCantFindField {
+				if err = handleFields(data, ct, valueField); errors.Unwrap(err) == ErrCantFindField {
+					continue
+				} else if err != nil {
 					return
 				}
 			}
@@ -208,7 +215,7 @@ func handleStructFields(data []byte, tag string, rv reflect.Value, notNested boo
 
 func handleStructSlices(data []byte, tag string, rv reflect.Value) (err error) {
 	var res json.RawMessage
-	res, err = valueFinder(data, tag)
+	res, err = QueryJson(data, tag)
 	if err != nil {
 		return
 	}
@@ -228,7 +235,9 @@ func handleStructSlices(data []byte, tag string, rv reflect.Value) (err error) {
 			return
 		}
 
-		if err = handleStructFields(bs, "", sv, true); err != nil {
+		if err = handleStructFields(bs, "", sv, true); errors.Unwrap(err) == ErrCantFindField {
+			continue
+		} else if err != nil {
 			return
 		}
 	}
@@ -241,7 +250,7 @@ func handleFields(data []byte, tag string, rv reflect.Value) (err error) {
 	inter := emptyValue.Interface()
 
 	var res json.RawMessage
-	res, err = valueFinder(data, tag)
+	res, err = QueryJson(data, tag)
 	if err != nil {
 		return
 	}
