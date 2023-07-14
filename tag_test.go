@@ -5,7 +5,7 @@ import (
 	"log"
 	"testing"
 
-	"github.com/ayes-web/testingassert"
+	assert "github.com/ayes-web/testingassert"
 )
 
 type outstruct struct {
@@ -76,15 +76,16 @@ func TestTag(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	testingassert.AssertEquals(t, out.One, one)
-	testingassert.AssertEquals(t, out.Two, two)
-	testingassert.AssertEqualsDeep(t, out.Three, three)
-	testingassert.AssertEquals(t, out.Four, three[0])
-	testingassert.AssertEquals(t, out.Five, five)
-	testingassert.AssertEqualsDeep(t, out.Six, []string{"1", "2"})
-	testingassert.AssertEqualsDeep(t, out.Seven, []int{1, 2})
-	testingassert.AssertEquals(t, out.Eight.Text, one)
-	testingassert.AssertEquals(t, out.Nine[0].Text, "1")
-	testingassert.AssertEquals(t, out.Nine[1].Text, "2")
-	testingassert.AssertEquals(t, out.Ten, "2")
+	assert.TestState = t
+	assert.Equals(out.One, one)
+	assert.Equals(out.Two, two)
+	assert.Equals(out.Three, three)
+	assert.Equals(out.Four, three[0])
+	assert.Equals(out.Five, five)
+	assert.Equals(out.Six, []string{"1", "2"})
+	assert.Equals(out.Seven, []int{1, 2})
+	assert.Equals(out.Eight.Text, one)
+	assert.Equals(out.Nine[0].Text, "1")
+	assert.Equals(out.Nine[1].Text, "2")
+	assert.Equals(out.Ten, "2")
 }
