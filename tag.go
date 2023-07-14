@@ -98,7 +98,6 @@ func QueryJson(data []byte, tag string) (object json.RawMessage, err error) {
 		case symbolTypeName:
 			if lastSymbolWasArray {
 				var input []json.RawMessage
-
 				if err = json.Unmarshal(object, &input); err != nil {
 					return
 				}
@@ -107,13 +106,14 @@ func QueryJson(data []byte, tag string) (object json.RawMessage, err error) {
 				for _, row := range input {
 					var obj map[string]json.RawMessage
 					if err = json.Unmarshal(row, &obj); err != nil {
-						return
+						err = nil
+						continue
 					}
 
 					var v json.RawMessage
-
 					if err = json.Unmarshal(obj[sym.Content.(string)], &v); err != nil {
-						return
+						err = nil
+						continue
 					}
 
 					result = append(result, v)
@@ -130,7 +130,6 @@ func QueryJson(data []byte, tag string) (object json.RawMessage, err error) {
 				}
 			} else {
 				var obj map[string]json.RawMessage
-
 				if err = json.Unmarshal(object, &obj); err != nil {
 					return
 				}
@@ -148,7 +147,7 @@ func QueryJson(data []byte, tag string) (object json.RawMessage, err error) {
 
 			i := sym.Content.(int)
 			if i >= len(obj) {
-				err = fmt.Errorf("%w %s", ErrInvalidIndex, sym.Content)
+				err = fmt.Errorf("%w %d", ErrInvalidIndex, i)
 				return
 			} else {
 				object = obj[i]
@@ -161,7 +160,7 @@ func QueryJson(data []byte, tag string) (object json.RawMessage, err error) {
 
 			i := len(obj) - 1
 			if i >= len(obj) {
-				err = fmt.Errorf("%w %s", ErrInvalidIndex, sym.Content)
+				err = fmt.Errorf("%w %d", ErrInvalidIndex, i)
 				return
 			} else {
 				object = obj[i]
