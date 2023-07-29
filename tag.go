@@ -1,6 +1,7 @@
 package rjson
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"reflect"
@@ -85,7 +86,6 @@ func QueryJson(data []byte, tag string) (object json.RawMessage, err error) {
 				symbols = append(symbols, symbol{Type: symbolTypeName, Content: token})
 			}
 		}
-
 	}
 
 	if err = json.Unmarshal(data, &object); err != nil {
@@ -128,6 +128,8 @@ func QueryJson(data []byte, tag string) (object json.RawMessage, err error) {
 				if err = json.Unmarshal(bs, &object); err != nil {
 					return
 				}
+
+				lastSymbolWasArray = false
 			} else {
 				var obj map[string]json.RawMessage
 				if err = json.Unmarshal(object, &obj); err != nil {
@@ -181,7 +183,7 @@ func handleStructFields(data []byte, tag string, rv reflect.Value, notNested boo
 		valueField := reflect.Indirect(rv).Field(i)
 
 		if Debug {
-			fmt.Printf("Handling field %s with %s tag name\n", field.Name, currentTag)
+			fmt.Printf("Handling field %s with %s tag name, type: %v\n", field.Name, currentTag, field.Type.Kind())
 		}
 
 		var ct string
@@ -284,6 +286,10 @@ func handleFields(data []byte, tag string, rv reflect.Value) (err error) {
 	res, err = QueryJson(data, tag)
 	if err != nil {
 		return
+	}
+
+	if rv.CanInt() || rv.CanUint() || rv.CanFloat() {
+		res = bytes.TrimSuffix(bytes.TrimPrefix(res, []byte("\"")), []byte("\""))
 	}
 
 	if err = json.Unmarshal(res, &inter); err != nil {
