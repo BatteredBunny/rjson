@@ -2,7 +2,6 @@ package rjson
 
 import (
 	"fmt"
-	"log"
 	"testing"
 
 	assert "github.com/ayes-web/testingassert"
@@ -73,7 +72,7 @@ func TestTag(t *testing.T) {
 
 	var out outstruct
 	if err := Unmarshal(bs, &out); err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 
 	assert.TestState = t
