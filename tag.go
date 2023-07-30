@@ -245,6 +245,17 @@ func handleStructSlices(data []byte, tag string, rv reflect.Value) (err error) {
 	return
 }
 
+func recursiveNumCheck(t reflect.Type) bool {
+	switch t.Kind() {
+	case reflect.Slice, reflect.Array:
+		return recursiveNumCheck(t.Elem())
+	case reflect.Float64, reflect.Float32, reflect.Int, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Int8, reflect.Uint, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uint8, reflect.Uintptr:
+		return true
+	default:
+		return false
+	}
+}
+
 func handleFields(data []byte, tag string, rv reflect.Value) (err error) {
 	emptyValue := reflect.New(rv.Type())
 	inter := emptyValue.Interface()
@@ -255,7 +266,8 @@ func handleFields(data []byte, tag string, rv reflect.Value) (err error) {
 		return
 	}
 
-	if rv.CanInt() || rv.CanUint() || rv.CanFloat() {
+	// TODO: make this work recursively for slices and such
+	if recursiveNumCheck(rv.Type()) {
 		res = bytes.TrimSuffix(bytes.TrimPrefix(res, []byte("\"")), []byte("\""))
 	}
 
