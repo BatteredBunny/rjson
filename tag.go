@@ -129,8 +129,6 @@ func QueryJson(data []byte, tag string) (object json.RawMessage, err error) {
 				if err = json.Unmarshal(bs, &object); err != nil {
 					return
 				}
-
-				lastSymbolWasArray = false
 			} else {
 				var obj map[string]json.RawMessage
 				if err = json.Unmarshal(object, &obj); err != nil {
