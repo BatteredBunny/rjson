@@ -62,16 +62,21 @@ output: ``onResponseReceivedActions[0].appendContinuationItemsAction.continuatio
 
     #### Input
     ```json
-    [
-        {
-            "text": "1",
-            "num": 1
-        },
-            {
-            "text": "2",
-            "num": 2
-        }
-    ]
+	{
+	    "arr": [
+	        {
+	            "text": "1",
+	            "num": 1
+	        },
+	        {
+	            "text": "2",
+	            "num": 2
+	        },
+	        {
+	            "no_commons": "this object has no common fields, so it wont be included"
+	        }
+	    ]
+	}
     ```
 
     #### Output
