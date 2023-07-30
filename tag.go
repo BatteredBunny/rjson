@@ -16,6 +16,7 @@ var ErrNotAPointer = errors.New("please insert a pointer")
 var ErrMalformedSyntax = errors.New("malformed tag syntax")
 var ErrCantFindField = errors.New("cant find field")
 var ErrInvalidIndex = errors.New("invalid slice index")
+var ErrNotAnObject = errors.New("failed to parse as json object:")
 
 const TagName = "rjson"
 const Divider = "."
@@ -133,6 +134,7 @@ func QueryJson(data []byte, tag string) (object json.RawMessage, err error) {
 			} else {
 				var obj map[string]json.RawMessage
 				if err = json.Unmarshal(object, &obj); err != nil {
+					err = fmt.Errorf("%w %s: %s", ErrNotAnObject, sym.Content, err)
 					return
 				}
 

@@ -6,9 +6,15 @@ a jq like library for golang that helps parse nested json
 go get github.com/ayes-web/rjson
 ```
 
-
-## Parse json such as this without any anonymous structs
-For a full example have a look at `tag_test.go`
+## Parse nested json without any anonymous structs
+```go
+type Out struct {
+	One     string      `rjson:"uwu.nya"`           // "123"
+	Two     int         `rjson:"one.two.three.num"` // 1
+	Three   []string    `rjson:"one.arr"`           // ["a","b"]
+    Four    string      `rjson:"one.arr[0]"`        // "a"
+}
+```
 
 ```json
 {
@@ -29,14 +35,15 @@ For a full example have a look at `tag_test.go`
 }
 ```
 
-```go
-type Out struct {
-	One     string      `rjson:"uwu.nya"`           // "123"
-	Two     int         `rjson:"one.two.three.num"` // 1
-	Three   []string    `rjson:"one.arr"`           // ["a","b"]
-    Four    string      `rjson:"one.arr[0]"`        // "a"
-}
-```
+For a more complete example have a look at `tag_test.go`
+
+## Helpful
+
+For quickly parsing json, in jetbrains IDE you can directly copy the json pointer and paste it into rjson field tag
+![tip](jetbrains-copy.png)
+
+output: ``onResponseReceivedActions[0].appendContinuationItemsAction.continuationItems[76].playlistVideoRenderer.thumbnail.thumbnails``
+
 
 ## Syntax explanation
 
@@ -53,28 +60,28 @@ type Out struct {
 
 - e.g `arr[].text`
 
-In
-```json
-[
-    {
-        "text": "1",
-        "num": 1
-    },
+    #### Input
+    ```json
+    [
         {
-        "text": "2",
-        "num": 2
-    }
-]
-```
+            "text": "1",
+            "num": 1
+        },
+            {
+            "text": "2",
+            "num": 2
+        }
+    ]
+    ```
 
-Out
-```json
-[
-    {
-        "text": "1",
-    },
-    {
-        "text": "2",
-    }
-]
-```
+    #### Output
+    ```json
+    [
+        {
+            "text": "1",
+        },
+        {
+            "text": "2",
+        }
+    ]
+    ```
