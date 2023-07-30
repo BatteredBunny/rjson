@@ -4,10 +4,8 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"log"
 	"reflect"
-	"strconv"
-	"strings"
-	"text/scanner"
 
 	"github.com/goccy/go-json"
 )
@@ -19,109 +17,78 @@ var ErrInvalidIndex = errors.New("invalid slice index")
 var ErrNotAnObject = errors.New("failed to parse as json object:")
 
 const TagName = "rjson"
-const Divider = "."
-const ArrayOpen = "["
-const ArrayClose = "]"
-const ArrayLast = "-"
 
-type symbolType = int
+func iteratorExecutor(input []json.RawMessage, iteratorLiterals []string, iteratorLevel int, totalIteratorLevel int) (result []json.RawMessage) {
+	for _, row := range input {
+		if iteratorLevel > 1 {
+			var obj []json.RawMessage
+			if err := json.Unmarshal(row, &obj); err != nil {
+				log.Fatal(err)
+			}
 
-const (
-	symbolTypeName symbolType = iota
-	symbolTypeArrayAccess
-	symbolTypeArrayLast
-	symbolTypeArray
-)
+			bs, err := json.Marshal(iteratorExecutor(obj, iteratorLiterals[1:], iteratorLevel-1, totalIteratorLevel))
+			if err != nil {
+				log.Fatal(err)
+			}
 
-type symbol struct {
-	Type    symbolType
-	Content any
+			var res json.RawMessage
+			if err := json.Unmarshal(bs, &res); err != nil {
+				log.Fatal(err)
+			}
+
+			result = append(result, res)
+		} else {
+			var obj map[string]json.RawMessage
+			if err := json.Unmarshal(row, &obj); err != nil {
+				continue
+			}
+
+			var v json.RawMessage
+			if err := json.Unmarshal(obj[iteratorLiterals[len(iteratorLiterals)-1]], &v); err != nil {
+				continue
+			}
+
+			result = append(result, v)
+		}
+	}
+
+	return
 }
 
 // The underlying function powering the tag, accepts json as bytes
 func QueryJson(data []byte, tag string) (object json.RawMessage, err error) {
-	var s scanner.Scanner
-	s.Init(strings.NewReader(tag))
-
-	var symbols []symbol
-	var arrayStarted bool
-	var arrayFilled bool
-	for tok := s.Scan(); tok != scanner.EOF; tok = s.Scan() {
-		token := s.TokenText()
-		switch token {
-		case ArrayOpen:
-			if arrayStarted {
-				err = ErrMalformedSyntax
-				return
-			}
-
-			arrayStarted = true
-		case ArrayClose:
-			if !arrayStarted {
-				err = ErrMalformedSyntax
-				return
-			} else if !arrayFilled {
-				symbols = append(symbols, symbol{Type: symbolTypeArray})
-			}
-
-			arrayStarted = false
-			arrayFilled = false
-		case Divider:
-			continue
-		case ArrayLast:
-			if arrayStarted && !arrayFilled {
-				symbols = append(symbols, symbol{Type: symbolTypeArrayLast})
-				arrayFilled = true
-			}
-		default:
-			if arrayStarted && !arrayFilled {
-				var i int
-				i, err = strconv.Atoi(token)
-				if err != nil {
-					return
-				}
-
-				symbols = append(symbols, symbol{Type: symbolTypeArrayAccess, Content: i})
-				arrayFilled = true
-			} else {
-				symbols = append(symbols, symbol{Type: symbolTypeName, Content: token})
-			}
-		}
+	tokens, err := scanTokens(tag)
+	if err != nil {
+		return
 	}
 
 	if err = json.Unmarshal(data, &object); err != nil {
 		return
 	}
 
-	var lastSymbolWasArray bool
-	for _, sym := range symbols {
-		switch sym.Type {
-		case symbolTypeName:
-			if lastSymbolWasArray {
+	var totalIteratorLevel int
+	for _, tok := range tokens {
+		switch tok.Type {
+		case arrayIteratorToken:
+			totalIteratorLevel++
+		}
+	}
+
+	var iteratorLevel int
+	var iteratorLiterals []string
+	for _, tok := range tokens {
+		switch tok.Type {
+		case literalToken:
+			if iteratorLevel > 0 {
+				iteratorLiterals = append(iteratorLiterals, tok.Content.(string))
+
 				var input []json.RawMessage
 				if err = json.Unmarshal(object, &input); err != nil {
 					return
 				}
 
-				var result []json.RawMessage
-				for _, row := range input {
-					var obj map[string]json.RawMessage
-					if err = json.Unmarshal(row, &obj); err != nil {
-						err = nil
-						continue
-					}
-
-					var v json.RawMessage
-					if err = json.Unmarshal(obj[sym.Content.(string)], &v); err != nil {
-						err = nil
-						continue
-					}
-
-					result = append(result, v)
-				}
-
 				var bs []byte
-				bs, err = json.Marshal(result)
+				bs, err = json.Marshal(iteratorExecutor(input, iteratorLiterals, iteratorLevel, totalIteratorLevel))
 				if err != nil {
 					return
 				}
@@ -132,29 +99,29 @@ func QueryJson(data []byte, tag string) (object json.RawMessage, err error) {
 			} else {
 				var obj map[string]json.RawMessage
 				if err = json.Unmarshal(object, &obj); err != nil {
-					err = fmt.Errorf("%w %s: %s", ErrNotAnObject, sym.Content, err)
+					err = fmt.Errorf("%w %s: %s", ErrNotAnObject, tok.Content, err)
 					return
 				}
 
-				if err = json.Unmarshal(obj[sym.Content.(string)], &object); err != nil {
-					err = fmt.Errorf("%w %s: %s", ErrCantFindField, sym.Content, err)
+				if err = json.Unmarshal(obj[tok.Content.(string)], &object); err != nil {
+					err = fmt.Errorf("%w %s: %s", ErrCantFindField, tok.Content, err)
 					return
 				}
 			}
-		case symbolTypeArrayAccess:
+		case arrayIndexToken:
 			var obj []json.RawMessage
 			if err = json.Unmarshal(object, &obj); err != nil {
 				return
 			}
 
-			i := sym.Content.(int)
+			i := tok.Content.(int)
 			if i >= len(obj) {
 				err = fmt.Errorf("%w %d", ErrInvalidIndex, i)
 				return
 			} else {
 				object = obj[i]
 			}
-		case symbolTypeArrayLast:
+		case arrayLastToken:
 			var obj []json.RawMessage
 			if err = json.Unmarshal(object, &obj); err != nil {
 				return
@@ -167,8 +134,8 @@ func QueryJson(data []byte, tag string) (object json.RawMessage, err error) {
 			} else {
 				object = obj[i]
 			}
-		case symbolTypeArray:
-			lastSymbolWasArray = true
+		case arrayIteratorToken:
+			iteratorLevel++
 		}
 	}
 

@@ -1,0 +1,136 @@
+{
+    "uwu": {
+        "nya": "%s"
+    },
+    "combined": [
+        {
+            "str": "1",
+            "num": 1,
+            "r": {
+                "different": "mrp"
+            }
+        },
+        {
+            "str": "2",
+            "num": 2,
+            "r": {
+                "fields": "mrp"
+            }
+        }
+    ],
+    "jarray": [
+        {
+            "mrow": "%s"
+        },
+        {
+            "1": "uwu"
+        }
+    ],
+    "one": {
+        "two": {
+            "three": {
+                "num": "%d"
+            }
+        },
+        "arr": [
+            "%s",
+            "%s"
+        ]
+    },
+    "nestedarr": [
+        {
+            "test": [
+                {
+                    "test": "aaa"
+                }
+            ]
+        }
+    ],
+    "nesteditter": [
+        {
+            "thing": [
+                {
+                    "a": "1"
+                },
+                {
+                    "b": "2"
+                },
+                {
+                    "a": "3"
+                }
+            ]
+        },
+        {
+            "thing": [
+                {
+                    "a": "1"
+                },
+                {
+                    "b": "2"
+                },
+                {
+                    "a": "4"
+                }
+            ]
+        }
+    ],
+    "nesteditterv2": [
+        {
+            "thing": {
+                "thingv2": {
+                    "thingv3": [
+                        {
+                            "a": {
+                                "value": "1"
+                            }
+                        },
+                        {
+                            "b": {
+                                "value": "2"
+                            }
+                        },
+                        {
+                            "a": {
+                                "value": "3"
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "thing": {
+                "thingv2": {
+                    "thingv3": [
+                        {
+                            "a": {
+                                "value": "1"
+                            }
+                        },
+                        {
+                            "b": {
+                                "value": "2"
+                            }
+                        },
+                        {
+                            "a": {
+                                "value": "4"
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "badges": [
+        {
+            "metadata": {
+                "icon": {
+                    "iconType": "verified"
+                },
+                "style": "blue",
+                "value": "Verified"
+            }
+        }
+    ]
+}

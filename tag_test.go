@@ -2,12 +2,13 @@ package rjson
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	assert "github.com/ayes-web/testingassert"
 )
 
-type outstruct struct {
+type testStruct struct {
 	One   string   `rjson:"uwu.nya"`
 	Two   int      `rjson:"one.two.three.num"`
 	Three []string `rjson:"one.arr"`
@@ -21,7 +22,12 @@ type outstruct struct {
 	Nine []struct {
 		Text string `rjson:"str"`
 	} `rjson:"combined"`
-	Ten string `rjson:"combined[-].str"`
+	Ten      string     `rjson:"combined[-].str"`
+	Eleven   string     `rjson:"nestedarr[0].test[0].test"`
+	Elevenv2 string     `rjson:"nestedarr[-].test[-].test"`
+	Twelve   [][]string `rjson:"nesteditter[].thing[].a"`
+	Twelvev2 [][]string `rjson:"nesteditterv2[].thing.thingv2.thingv3[].a.value"`
+	Thirteen []string   `rjson:"badges[].metadata.value"`
 }
 
 func TestTag(t *testing.T) {
@@ -30,48 +36,15 @@ func TestTag(t *testing.T) {
 	three := []string{"mrow", "OWO"}
 	five := "asdasdasdasd"
 
-	bs := []byte(fmt.Sprintf(`
-	{
-		"uwu": {
-			"nya": "%s"
-		},
-		"combined": [
-			{
-				"str": "1",
-				"num": 1,
-				"r": {
-					"different": "mrp"
-				}
-			},
-			{
-				"str": "2",
-				"num": 2,
-				"r": {
-					"fields": "mrp"
-				}
-			}
-		],
-		"jarray": [
-			{
-				"mrow": "%s"
-			},
-			{
-				"1": "uwu"
-			}
-		],
-		"one": {
-			"two": {
-				"three": {
-					"num": %d
-				}
-			},
-			"arr": ["%s", "%s"]
-		}
+	bs, err := os.ReadFile("test.json")
+	if err != nil {
+		t.Fatal(err)
 	}
-	`, one, five, two, three[0], three[1]))
 
-	var out outstruct
-	if err := Unmarshal(bs, &out); err != nil {
+	rawjson := fmt.Sprintf(string(bs), one, five, two, three[0], three[1])
+
+	var out testStruct
+	if err := Unmarshal([]byte(rawjson), &out); err != nil {
 		t.Fatal(err)
 	}
 
@@ -87,4 +60,9 @@ func TestTag(t *testing.T) {
 	assert.Equals(out.Nine[0].Text, "1")
 	assert.Equals(out.Nine[1].Text, "2")
 	assert.Equals(out.Ten, "2")
+	assert.Equals(out.Eleven, "aaa")
+	assert.Equals(out.Elevenv2, "aaa")
+	assert.Equals(out.Twelve, [][]string{{"1", "3"}, {"1", "4"}})
+	assert.Equals(out.Twelvev2, [][]string{{"1", "3"}, {"1", "4"}})
+	assert.Equals(out.Thirteen, []string{"Verified"})
 }
