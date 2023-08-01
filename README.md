@@ -39,6 +39,11 @@ For a more complete example have a look at `tag_test.go`
 
 ## Helpful
 
+### Debugging
+If the json isnt parsing as expected try enabling the rjson.Debug variable.
+```rjson.Debug = true```
+
+### Jetbrains
 For quickly parsing json, in jetbrains IDE you can directly copy the json pointer and paste it into rjson field tag
 ![tip](jetbrains-copy.png)
 

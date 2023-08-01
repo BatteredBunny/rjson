@@ -150,11 +150,11 @@ func handleStructFields(data []byte, tag string, rv reflect.Value, notNested boo
 		valueField := reflect.Indirect(rv).Field(i)
 
 		if Debug {
-			fmt.Printf("Handling field %s with %s tag name, type: %v\n", field.Name, currentTag, field.Type.Kind())
+			fmt.Printf("Handling field %s with tag name: %s, type: %v\n", field.Name, currentTag, field.Type.Kind())
 		}
 
 		var ct string
-		if currentTag != "" && t.Field(i).IsExported() {
+		if currentTag != "" && field.IsExported() {
 			if field.Type.Kind() == reflect.Struct {
 				if notNested {
 					ct = fmt.Sprintf("%s.%s", tag, currentTag)
@@ -204,6 +204,8 @@ func handleStructFields(data []byte, tag string, rv reflect.Value, notNested boo
 					return
 				}
 			}
+		} else if Debug && len(currentTag) > 0 && !field.IsExported() {
+			fmt.Println("WARNING: rjson tag on an unexported field")
 		}
 	}
 
