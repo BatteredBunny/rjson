@@ -57,6 +57,7 @@ func (u *unparsedTokens) Match(match string) bool {
 func scanTokens(tag string) (tokens []token, err error) {
 	var s scanner.Scanner
 	s.Init(strings.NewReader(tag))
+	s.Mode ^= scanner.ScanChars | scanner.ScanFloats
 	var ut unparsedTokens
 
 	for tok := s.Scan(); tok != scanner.EOF; tok = s.Scan() {

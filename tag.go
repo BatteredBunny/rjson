@@ -55,7 +55,7 @@ func iteratorExecutor(input []json.RawMessage, iteratorLiterals []string, iterat
 	return
 }
 
-// The underlying function powering the tag, accepts json as bytes
+// QueryJson is the underlying function powering the tag, accepts json as bytes
 func QueryJson(data []byte, tag string) (object json.RawMessage, err error) {
 	tokens, err := scanTokens(tag)
 	if err != nil {
@@ -162,7 +162,7 @@ func handleStructFields(data []byte, tag string, rv reflect.Value, notNested boo
 					ct = fmt.Sprintf("%s[%d]%s", tag, i, currentTag)
 				}
 
-				if err = handleStructFields(data, ct, valueField, false); errors.Unwrap(err) == ErrCantFindField || errors.Unwrap(err) == ErrInvalidIndex {
+				if err = handleStructFields(data, ct, valueField, false); errors.Is(err, ErrCantFindField) || errors.Is(err, ErrInvalidIndex) {
 					if Debug {
 						fmt.Println("WARNING:", err)
 					}
@@ -178,7 +178,7 @@ func handleStructFields(data []byte, tag string, rv reflect.Value, notNested boo
 					ct = fmt.Sprintf("%s[%d]%s", tag, i, currentTag)
 				}
 
-				if err = handleStructSlices(data, ct, valueField); errors.Unwrap(err) == ErrCantFindField || errors.Unwrap(err) == ErrInvalidIndex {
+				if err = handleStructSlices(data, ct, valueField); errors.Is(err, ErrCantFindField) || errors.Is(err, ErrInvalidIndex) {
 					if Debug {
 						fmt.Println("WARNING:", err)
 					}
@@ -194,7 +194,7 @@ func handleStructFields(data []byte, tag string, rv reflect.Value, notNested boo
 					ct = tag + "." + currentTag
 				}
 
-				if err = handleFields(data, ct, valueField); errors.Unwrap(err) == ErrCantFindField || errors.Unwrap(err) == ErrInvalidIndex {
+				if err = handleFields(data, ct, valueField); errors.Is(err, ErrCantFindField) || errors.Is(err, ErrInvalidIndex) {
 					if Debug {
 						fmt.Println("WARNING:", err)
 					}
@@ -234,7 +234,7 @@ func handleStructSlices(data []byte, tag string, rv reflect.Value) (err error) {
 			return
 		}
 
-		if err = handleStructFields(bs, "", sv, true); errors.Unwrap(err) == ErrCantFindField || errors.Unwrap(err) == ErrInvalidIndex {
+		if err = handleStructFields(bs, "", sv, true); errors.Is(err, ErrCantFindField) || errors.Is(err, ErrInvalidIndex) {
 			if Debug {
 				fmt.Println("WARNING:", err)
 			}

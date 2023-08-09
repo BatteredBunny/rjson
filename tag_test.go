@@ -41,10 +41,10 @@ func TestTag(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	rawjson := fmt.Sprintf(string(bs), one, five, two, three[0], three[1])
+	rawJson := fmt.Sprintf(string(bs), one, five, two, three[0], three[1])
 
 	var out testStruct
-	if err := Unmarshal([]byte(rawjson), &out); err != nil {
+	if err := Unmarshal([]byte(rawJson), &out); err != nil {
 		t.Fatal(err)
 	}
 
