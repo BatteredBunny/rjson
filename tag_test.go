@@ -28,6 +28,11 @@ type testStruct struct {
 	Twelve   [][]string `rjson:"nesteditter[].thing[].a"`
 	Twelvev2 [][]string `rjson:"nesteditterv2[].thing.thingv2.thingv3[].a.value"`
 	Thirteen []string   `rjson:"badges[].metadata.value"`
+	Fourteen struct {
+		Eight struct {
+			Text string `rjson:"nya"`
+		} `rjson:"uwu"`
+	} `rjson:"."`
 }
 
 func TestTag(t *testing.T) {
@@ -65,4 +70,5 @@ func TestTag(t *testing.T) {
 	assert.Equals(out.Twelve, [][]string{{"1", "3"}, {"1", "4"}})
 	assert.Equals(out.Twelvev2, [][]string{{"1", "3"}, {"1", "4"}})
 	assert.Equals(out.Thirteen, []string{"Verified"})
+	assert.Equals(out.Fourteen.Eight.Text, one)
 }

@@ -47,7 +47,7 @@ If the json isnt parsing as expected try enabling the rjson.Debug variable.
 For quickly parsing json, in jetbrains IDE you can directly copy the json pointer and paste it into rjson field tag
 ![tip](jetbrains-copy.png)
 
-output: ``onResponseReceivedActions[0].appendContinuationItemsAction.continuationItems[76].playlistVideoRenderer.thumbnail.thumbnails``
+copied value: ``onResponseReceivedActions[0].appendContinuationItemsAction.continuationItems[76].playlistVideoRenderer.thumbnail.thumbnails``
 
 
 ## Syntax explanation

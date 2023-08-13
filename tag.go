@@ -156,11 +156,7 @@ func handleStructFields(data []byte, tag string, rv reflect.Value, notNested boo
 		var ct string
 		if currentTag != "" && field.IsExported() {
 			if field.Type.Kind() == reflect.Struct {
-				if notNested {
-					ct = fmt.Sprintf("%s.%s", tag, currentTag)
-				} else {
-					ct = fmt.Sprintf("%s[%d]%s", tag, i, currentTag)
-				}
+				ct = fmt.Sprintf("%s.%s", tag, currentTag)
 
 				if err = handleStructFields(data, ct, valueField, false); errors.Is(err, ErrCantFindField) || errors.Is(err, ErrInvalidIndex) {
 					if Debug {
@@ -172,11 +168,7 @@ func handleStructFields(data []byte, tag string, rv reflect.Value, notNested boo
 					return
 				}
 			} else if field.Type.Kind() == reflect.Slice && field.Type.Elem().Kind() == reflect.Struct {
-				if notNested {
-					ct = fmt.Sprintf("%s.%s", tag, currentTag)
-				} else {
-					ct = fmt.Sprintf("%s[%d]%s", tag, i, currentTag)
-				}
+				ct = fmt.Sprintf("%s.%s", tag, currentTag)
 
 				if err = handleStructSlices(data, ct, valueField); errors.Is(err, ErrCantFindField) || errors.Is(err, ErrInvalidIndex) {
 					if Debug {
@@ -191,7 +183,7 @@ func handleStructFields(data []byte, tag string, rv reflect.Value, notNested boo
 				if notNested {
 					ct = currentTag
 				} else {
-					ct = tag + "." + currentTag
+					ct = fmt.Sprintf("%s.%s", tag, currentTag)
 				}
 
 				if err = handleFields(data, ct, valueField); errors.Is(err, ErrCantFindField) || errors.Is(err, ErrInvalidIndex) {
@@ -291,7 +283,7 @@ func Unmarshal(data []byte, v any) (err error) {
 		return ErrNotAPointer
 	}
 
-	if err = handleStructFields(data, "", rv, true); err != nil {
+	if err = handleStructFields(data, ".", rv, true); err != nil {
 		return
 	}
 
