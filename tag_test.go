@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	assert "github.com/ayes-web/testingassert"
+	assert "github.com/BatteredBunny/testingassert"
 )
 
 type testStruct struct {

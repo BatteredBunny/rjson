@@ -3,7 +3,7 @@
 a jq like library for golang that helps parse nested json
 
 ```
-go get github.com/ayes-web/rjson
+go get github.com/BatteredBunny/rjson
 ```
 
 ## Parse nested json without any anonymous structs
