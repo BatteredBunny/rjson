@@ -39,6 +39,8 @@ For a more complete example have a look at `tag_test.go`
 
 ## Try out the parsing in an interactive form
 
+![cli example](cli-example.png)
+
 ```
 go run github.com/BatteredBunny/rjson/cmd/livejson --file example.json
 ```
