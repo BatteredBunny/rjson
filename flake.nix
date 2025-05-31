@@ -28,7 +28,8 @@
           default = pkgs.mkShell {
             buildInputs = with pkgs; [
               go
-              gotools # goyacc
+
+              gotools # goyacc -o parser.go parser.y
               golangci-lint
             ];
           };

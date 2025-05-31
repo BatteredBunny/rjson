@@ -57,10 +57,13 @@ func iteratorExecutor(input []json.RawMessage, iteratorLiterals []string, iterat
 
 // QueryJson is the underlying function powering the tag, accepts json as bytes
 func QueryJson(data []byte, tag string) (object json.RawMessage, err error) {
-	tokens, err := scanTokens(tag)
+	query, err := parse(tag)
 	if err != nil {
+		err = fmt.Errorf("failed to parse tag '%s': %w", tag, err)
 		return
 	}
+
+	tokens := query.Tokens
 
 	if err = json.Unmarshal(data, &object); err != nil {
 		return
@@ -68,8 +71,7 @@ func QueryJson(data []byte, tag string) (object json.RawMessage, err error) {
 
 	var totalIteratorLevel int
 	for _, tok := range tokens {
-		switch tok.Type {
-		case arrayIteratorToken:
+		if tok.Type == arrayIteratorToken {
 			totalIteratorLevel++
 		}
 	}
@@ -155,9 +157,13 @@ func handleStructFields(data []byte, tag string, rv reflect.Value, notNested boo
 
 		var ct string
 		if currentTag != "" && field.IsExported() {
-			if field.Type.Kind() == reflect.Struct {
+			if tag == "" || tag == "." {
+				ct = currentTag
+			} else {
 				ct = fmt.Sprintf("%s.%s", tag, currentTag)
+			}
 
+			if field.Type.Kind() == reflect.Struct {
 				if err = handleStructFields(data, ct, valueField, false); errors.Is(err, ErrCantFindField) || errors.Is(err, ErrInvalidIndex) {
 					if Debug {
 						fmt.Println("WARNING:", err)
@@ -168,8 +174,6 @@ func handleStructFields(data []byte, tag string, rv reflect.Value, notNested boo
 					return
 				}
 			} else if field.Type.Kind() == reflect.Slice && field.Type.Elem().Kind() == reflect.Struct {
-				ct = fmt.Sprintf("%s.%s", tag, currentTag)
-
 				if err = handleStructSlices(data, ct, valueField); errors.Is(err, ErrCantFindField) || errors.Is(err, ErrInvalidIndex) {
 					if Debug {
 						fmt.Println("WARNING:", err)
@@ -180,12 +184,6 @@ func handleStructFields(data []byte, tag string, rv reflect.Value, notNested boo
 					return
 				}
 			} else {
-				if notNested {
-					ct = currentTag
-				} else {
-					ct = fmt.Sprintf("%s.%s", tag, currentTag)
-				}
-
 				if err = handleFields(data, ct, valueField); errors.Is(err, ErrCantFindField) || errors.Is(err, ErrInvalidIndex) {
 					if Debug {
 						fmt.Println("WARNING:", err)

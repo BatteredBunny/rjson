@@ -15,7 +15,7 @@ type testStruct struct {
 	Four  string   `rjson:"one.arr[0]"`
 	Five  string   `rjson:"jarray[0].mrow"`
 	Six   []string `rjson:"combined[].str"`
-	Seven []int    `rjson:"combined[]num"`
+	Seven []int    `rjson:"combined[].num"`
 	Eight struct {
 		Text string `rjson:"nya"`
 	} `rjson:"uwu"`
