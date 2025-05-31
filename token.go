@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 	"text/scanner"
+	"slices"
 )
 
 const Divider = "."
@@ -45,13 +46,7 @@ func (u *unparsedTokens) Next() (token string) {
 }
 
 func (u *unparsedTokens) Match(match string) bool {
-	for _, token := range u.Tokens[u.pos:] {
-		if token == match {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(u.Tokens[u.pos:], match)
 }
 
 func scanTokens(tag string) (tokens []token, err error) {

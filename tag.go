@@ -14,7 +14,7 @@ var ErrNotAPointer = errors.New("please insert a pointer")
 var ErrMalformedSyntax = errors.New("malformed tag syntax")
 var ErrCantFindField = errors.New("cant find field")
 var ErrInvalidIndex = errors.New("invalid slice index")
-var ErrNotAnObject = errors.New("failed to parse as json object:")
+var ErrNotAnObject = errors.New("failed to parse as json object")
 
 const TagName = "rjson"
 
@@ -144,7 +144,7 @@ func QueryJson(data []byte, tag string) (object json.RawMessage, err error) {
 
 func handleStructFields(data []byte, tag string, rv reflect.Value, notNested bool) (err error) {
 	t := reflect.Indirect(rv).Type()
-	for i := 0; i < t.NumField(); i++ {
+	for i := range t.NumField() {
 		field := t.Field(i)
 		currentTag := field.Tag.Get(TagName)
 		valueField := reflect.Indirect(rv).Field(i)
@@ -216,7 +216,7 @@ func handleStructSlices(data []byte, tag string, rv reflect.Value) (err error) {
 		return
 	}
 
-	for j := 0; j < len(arr); j++ {
+	for j := range arr {
 		rv.Set(reflect.Append(rv, reflect.Indirect(reflect.New(rv.Type().Elem()))))
 		sv := rv.Index(j)
 

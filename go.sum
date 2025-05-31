@@ -1,4 +1,4 @@
 github.com/BatteredBunny/testingassert v0.3.3 h1:dTn52BncLfkTdp+PnIbJoI9mOg0G9Wb39Vmm+sr/m10=
 github.com/BatteredBunny/testingassert v0.3.3/go.mod h1:nBMcEPp8Zp/M3+qqN4a7l3DQg+sNM81WxL5tIaB7sL0=
-github.com/goccy/go-json v0.10.2 h1:CrxCmQqYDkv1z7lO7Wbh2HN93uovUHgrECaO5ZrCXAU=
-github.com/goccy/go-json v0.10.2/go.mod h1:6MelG93GURQebXPDq3khkgXZkazVtN9CRI+MGFi0w8I=
+github.com/goccy/go-json v0.10.5 h1:Fq85nIqj+gXn/S5ahsiTlK3TmC85qgirsdTP/+DeaC4=
+github.com/goccy/go-json v0.10.5/go.mod h1:oq7eo15ShAhp70Anwd5lgX2pLfOS3QCiwU/PULtXL6M=
