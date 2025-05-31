@@ -37,6 +37,12 @@ type Out struct {
 
 For a more complete example have a look at `tag_test.go`
 
+## Try out the parsing in an interactive form
+
+```
+go run github.com/BatteredBunny/rjson/cmd/livejson --file example.json
+```
+
 ## Helpful
 
 ### Debugging
