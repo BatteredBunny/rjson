@@ -19,24 +19,18 @@ var (
 	bold   = color.New(color.Bold).SprintFunc()
 )
 
-type Config struct {
-	jsonFile string
-	pretty   bool
-}
-
 func main() {
-	config := &Config{}
-
-	flag.StringVar(&config.jsonFile, "file", "", "Path to JSON file (required)")
+	var jsonFile string
+	flag.StringVar(&jsonFile, "file", "", "Path to JSON file (required)")
 	flag.Parse()
 
-	if config.jsonFile == "" {
+	if jsonFile == "" {
 		fmt.Fprintf(os.Stderr, "%s JSON file is required\n", red("Error:"))
 		flag.Usage()
 		os.Exit(1)
 	}
 
-	p := tea.NewProgram(initialModel(config))
+	p := tea.NewProgram(initialModel(jsonFile))
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Alas, there's been an error: %v", err)
 		os.Exit(1)
@@ -62,16 +56,15 @@ type model struct {
 	query string
 
 	jsonData []byte
-
-	config *Config
+	jsonFile string
 }
 
 func (m model) Init() tea.Cmd {
 	return nil
 }
 
-func initialModel(config *Config) model {
-	jsonData, err := loadJSONFile(config.jsonFile)
+func initialModel(jsonFile string) model {
+	jsonData, err := loadJSONFile(jsonFile)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%s %v\n", red("Error loading JSON file:"), err)
 		os.Exit(1)
@@ -80,7 +73,7 @@ func initialModel(config *Config) model {
 	return model{
 		query:    "",
 		jsonData: jsonData,
-		config:   config,
+		jsonFile: jsonFile,
 	}
 }
 
@@ -91,7 +84,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch pressed {
 		case "ctrl+c", "q":
 			return m, tea.Quit
-		case "up", "down":
+		case "up", "down", "tab":
 			break
 		case "backspace":
 			if len(m.query) > 0 {
@@ -110,29 +103,23 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) View() string {
 	var s string
 
-	s += fmt.Sprintf("%s, press q to quit\n", bold("RJSON repl"))
-	s += fmt.Sprintf("Loaded: %s\n", green(m.config.jsonFile))
+	s += fmt.Sprintf("%s - %s | Press q to quit\n", bold("RJSON repl"), green(m.jsonFile))
+	s += fmt.Sprintf("%s\n", executeQuery(m.query, m.jsonData))
 
-	s += fmt.Sprintf("%s\n", executeQuery(m.query, m.jsonData, m.config.pretty))
-
-	s += fmt.Sprintf("%s %s", cyan("rjson>"), m.query)
+	s += fmt.Sprintf("%s %s", cyan("query>"), m.query)
 
 	return s
 }
 
-func executeQuery(query string, jsonData []byte, pretty bool) string {
+func executeQuery(query string, jsonData []byte) string {
 	result, err := rjson.QueryJson(jsonData, query)
 	if err != nil {
 		return fmt.Sprintf("%s %v", red("Query Error:"), err)
 	}
 
 	var output []byte
-	if pretty {
-		output, err = json.MarshalIndent(result, "", "  ")
-		if err != nil {
-			output = result
-		}
-	} else {
+	output, err = json.MarshalIndent(result, "", "  ")
+	if err != nil {
 		output = result
 	}
 
